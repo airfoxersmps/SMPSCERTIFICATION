@@ -2573,30 +2573,30 @@
 
                         <div class="logo-slider">
                             <div class="logo-track">
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (2).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(2).png" class="logo-img"
                                         alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (4).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(4).png" class="logo-img"
                                         alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (5).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(5).png" class="logo-img"
                                         alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (6).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(6).png" class="logo-img"
                                         alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (7).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(7).png" class="logo-img"
                                         alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (8).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(8).png" class="logo-img"
                                         alt="Partner Logo"></div>
                                 <!-- Duplicate for Seamless Scroll -->
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (2).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(2).png" class="logo-img"
                                         alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (4).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(4).png" class="logo-img"
                                         alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (5).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(5).png" class="logo-img"
                                         alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (6).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(6).png" class="logo-img"
                                         alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (7).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(7).png" class="logo-img"
                                         alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf (8).png" class="logo-img"
+                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf%20(8).png" class="logo-img"
                                         alt="Partner Logo"></div>
                             </div>
                         </div>
@@ -2856,6 +2856,66 @@
             activeLessonId: null,
             activeModuleExpanded: {},
 
+            // Sync diagnostics properties
+            syncStatus: {
+                courses: 'connecting',
+                users: 'connecting',
+                enrollments: 'connecting',
+                certificates: 'connecting',
+                progress: 'connecting',
+                notes: 'connecting'
+            },
+
+            getFirestoreSyncBadge() {
+                const statuses = Object.values(this.syncStatus || {});
+                if (statuses.length === 0) return '';
+                if (statuses.some(s => s === 'permission-denied')) {
+                    return `<span class="badge badge-danger" style="font-size:0.6rem; padding:0.15rem 0.5rem; cursor:pointer;" onclick="App.showSyncDiagnostics()" title="Click for Firestore security rules error details"><i class="fa-solid fa-triangle-exclamation"></i> Firestore Rules Blocked</span>`;
+                }
+                if (statuses.some(s => s === 'error')) {
+                    return `<span class="badge badge-warning" style="font-size:0.6rem; padding:0.15rem 0.5rem; cursor:pointer;" onclick="App.showSyncDiagnostics()"><i class="fa-solid fa-circle-exclamation"></i> Firestore Offline</span>`;
+                }
+                if (statuses.every(s => s === 'connected')) {
+                    return `<span class="badge badge-success" style="font-size:0.6rem; padding:0.15rem 0.5rem; background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.25)" title="Connected to Google Firestore Cloud Database"><i class="fa-solid fa-circle-check"></i> Cloud Synced</span>`;
+                }
+                return `<span class="badge badge-gray" style="font-size:0.6rem; padding:0.15rem 0.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Connecting Cloud...</span>`;
+            },
+
+            updateAdminDashboardBadge() {
+                const el = document.getElementById('firestore-sync-badge-container');
+                if (el) el.innerHTML = this.getFirestoreSyncBadge();
+            },
+
+            showSyncDiagnostics() {
+                const modalBody = document.getElementById('settings-modal-body');
+                document.getElementById('settings-modal-body').parentElement.querySelector('.modal-title').textContent = 'Cloud Sync Diagnostics';
+                
+                let details = '';
+                for (let [col, status] of Object.entries(this.syncStatus || {})) {
+                    const icon = status === 'connected' ? '<i class="fa-solid fa-circle-check c-green"></i>' : '<i class="fa-solid fa-circle-xmark c-red"></i>';
+                    details += `<div class="flex justify-between items-center py-2" style="border-bottom:1px solid var(--border)"><span class="fw-600 uppercase t-xs">${col}</span><span>${icon} ${status}</span></div>`;
+                }
+
+                modalBody.innerHTML = `
+                    <p class="c-text2 t-sm mb-4">The SMPS platform uses real-time Google Cloud Firestore for syncing data across all devices.</p>
+                    <div class="mb-4" style="background:var(--bg3); padding:1rem; border-radius:var(--r)">
+                        ${details}
+                    </div>
+                    <div class="badge badge-danger w-full mb-3" style="justify-content:center"><i class="fa-solid fa-shield-halved"></i> Action Required: Update Security Rules</div>
+                    <p class="c-text2 t-xs mb-3" style="line-height:1.4">Firestore rules currently block access. Go to your <strong>Firebase Console > Firestore Database > Rules</strong> and change them to allow reads and writes:</p>
+                    <pre class="t-xs p-3 mb-4" style="background:#000; border-radius:var(--r); color:#0f0; overflow-x:auto; font-family:var(--font-mono)">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}</pre>
+                    <button class="btn btn-gold w-full" onclick="App.closeOverlayForce()">Got it</button>
+                `;
+                this.openSpecificModal('modal-settings');
+            },
+
             // ---- INIT ----
             async init() {
                 this.data = DB.load();
@@ -2871,6 +2931,9 @@
                 try {
                     // 1. Sync Courses
                     onSnapshot(collection(fs, 'courses'), async (snapshot) => {
+                        this.syncStatus.courses = 'connected';
+                        this.updateAdminDashboardBadge();
+
                         const coursesList = [];
                         snapshot.forEach((doc) => {
                             const data = doc.data();
@@ -2896,10 +2959,17 @@
                             DB.save(this.data);
                             this.refreshCurrentView();
                         }
+                    }, (err) => {
+                        console.error("Courses sync failed:", err);
+                        this.syncStatus.courses = err.code === 'permission-denied' ? 'permission-denied' : 'error';
+                        this.updateAdminDashboardBadge();
                     });
 
                     // 2. Sync Users
                     onSnapshot(collection(fs, 'users'), (snapshot) => {
+                        this.syncStatus.users = 'connected';
+                        this.updateAdminDashboardBadge();
+
                         const usersList = [];
                         snapshot.forEach((doc) => {
                             usersList.push({
@@ -2910,10 +2980,17 @@
                         this.data.users = usersList;
                         DB.save(this.data);
                         this.refreshCurrentView();
+                    }, (err) => {
+                        console.error("Users sync failed:", err);
+                        this.syncStatus.users = err.code === 'permission-denied' ? 'permission-denied' : 'error';
+                        this.updateAdminDashboardBadge();
                     });
 
                     // 3. Sync Enrollments
                     onSnapshot(collection(fs, 'enrollments'), (snapshot) => {
+                        this.syncStatus.enrollments = 'connected';
+                        this.updateAdminDashboardBadge();
+
                         const enrollmentsList = [];
                         snapshot.forEach((doc) => {
                             enrollmentsList.push({
@@ -2924,10 +3001,17 @@
                         this.data.enrollments = enrollmentsList;
                         DB.save(this.data);
                         this.refreshCurrentView();
+                    }, (err) => {
+                        console.error("Enrollments sync failed:", err);
+                        this.syncStatus.enrollments = err.code === 'permission-denied' ? 'permission-denied' : 'error';
+                        this.updateAdminDashboardBadge();
                     });
 
                     // 4. Sync Certificates (Completions)
                     onSnapshot(collection(fs, 'certificates'), (snapshot) => {
+                        this.syncStatus.certificates = 'connected';
+                        this.updateAdminDashboardBadge();
+
                         const completionsList = [];
                         snapshot.forEach((doc) => {
                             completionsList.push({
@@ -2937,10 +3021,17 @@
                         this.data.completions = completionsList;
                         DB.save(this.data);
                         this.refreshCurrentView();
+                    }, (err) => {
+                        console.error("Certificates sync failed:", err);
+                        this.syncStatus.certificates = err.code === 'permission-denied' ? 'permission-denied' : 'error';
+                        this.updateAdminDashboardBadge();
                     });
 
                     // 5. Sync Progress
                     onSnapshot(collection(fs, 'progress'), (snapshot) => {
+                        this.syncStatus.progress = 'connected';
+                        this.updateAdminDashboardBadge();
+
                         const progObj = {};
                         snapshot.forEach((doc) => {
                             progObj[doc.id] = doc.data().lessons || {};
@@ -2948,10 +3039,17 @@
                         this.data.progress = progObj;
                         DB.save(this.data);
                         this.refreshCurrentView();
+                    }, (err) => {
+                        console.error("Progress sync failed:", err);
+                        this.syncStatus.progress = err.code === 'permission-denied' ? 'permission-denied' : 'error';
+                        this.updateAdminDashboardBadge();
                     });
 
                     // 6. Sync Notes
                     onSnapshot(collection(fs, 'notes'), (snapshot) => {
+                        this.syncStatus.notes = 'connected';
+                        this.updateAdminDashboardBadge();
+
                         const notesObj = {};
                         snapshot.forEach((doc) => {
                             notesObj[doc.id] = doc.data().text || '';
@@ -2959,6 +3057,10 @@
                         this.data.notes = notesObj;
                         DB.save(this.data);
                         this.refreshCurrentView();
+                    }, (err) => {
+                        console.error("Notes sync failed:", err);
+                        this.syncStatus.notes = err.code === 'permission-denied' ? 'permission-denied' : 'error';
+                        this.updateAdminDashboardBadge();
                     });
 
                 } catch (err) {
@@ -3245,7 +3347,7 @@
           <div class="course-instructor"><i class="fa-regular fa-circle-user"></i> ${this.e(c.instructor)}</div>
           <p class="c-text2 t-sm" style="line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${this.e(c.desc)}</p>
           <div class="course-footer">
-            <div><span class="course-price">₹${c.price.toLocaleString()}</span></div>
+            <div><span class="course-price">₹${(c.price || 0).toLocaleString()}</span></div>
             ${actionBtn}
           </div>
         </div>
@@ -3307,7 +3409,7 @@
           </div>
           <div class="flex justify-between mb-4 p-4" style="background:var(--bg3);border-radius:var(--r)">
             <span class="c-text2 t-sm">Total Amount</span>
-            <span class="fw-700 t-lg">₹${c.price.toLocaleString()}</span>
+            <span class="fw-700 t-lg">₹${(c.price || 0).toLocaleString()}</span>
           </div>
           <form onsubmit="App.submitEnrollment(event)">
             <div class="input-wrap">
@@ -3536,36 +3638,54 @@
                 if (!this.data.progress[key]) this.data.progress[key] = {};
                 this.data.progress[key][lessonId] = true;
                 
+                // Save locally first to guarantee responsive fallback
+                DB.save(this.data);
+                
+                let cloudSaved = false;
                 try {
                     await setDoc(doc(fs, 'progress', key), { lessons: this.data.progress[key] });
-                    this.toast('Lesson marked complete!', 'success');
-                    
-                    // Check course completion
-                    const c = this.data.courses.find(x => x.id == this.activeCourseId);
-                    const totalLessons = (c?.modules || []).reduce((a, m) => a + (m.lessons || []).length, 0);
-                    const completedCount = Object.keys(this.data.progress[key]).length;
-                    if (completedCount >= totalLessons) {
-                        if (!this.data.completions.some(x => x.userId === this.user.id && x.courseId == this.activeCourseId)) {
-                            const comp = { userId: this.user.id, courseId: this.activeCourseId, certId: 'CERT-' + Math.random().toString(36).substr(2, 9).toUpperCase(), date: new Date().toISOString() };
-                            await setDoc(doc(fs, 'certificates', `${this.user.id}_${this.activeCourseId}`), comp);
-                            this.toast('🎉 Course completed! Certificate available.', 'success');
-                            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-                        }
-                    }
-                    this.renderPlayer();
+                    cloudSaved = true;
                 } catch (err) {
-                    console.error("Error marking lesson complete in Firestore:", err);
-                    this.toast("Failed to mark lesson complete.", "error");
+                    console.warn("Could not save progress to Google Cloud Firestore (using local storage fallback):", err);
                 }
+
+                // Check course completion
+                const c = this.data.courses.find(x => x.id == this.activeCourseId);
+                const totalLessons = (c?.modules || []).reduce((a, m) => a + (m.lessons || []).length, 0);
+                const completedCount = Object.keys(this.data.progress[key]).length;
+                if (completedCount >= totalLessons) {
+                    if (!this.data.completions.some(x => x.userId === this.user.id && x.courseId == this.activeCourseId)) {
+                        const comp = { userId: this.user.id, courseId: this.activeCourseId, certId: 'CERT-' + Math.random().toString(36).substr(2, 9).toUpperCase(), date: new Date().toISOString() };
+                        this.data.completions.push(comp);
+                        DB.save(this.data);
+                        
+                        try {
+                            await setDoc(doc(fs, 'certificates', `${this.user.id}_${this.activeCourseId}`), comp);
+                        } catch (err) {
+                            console.warn("Could not save certificate to Google Cloud Firestore (using local storage fallback):", err);
+                        }
+                        
+                        this.toast('🎉 Course completed! Certificate available.', 'success');
+                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                    }
+                }
+
+                if (cloudSaved) {
+                    this.toast('Lesson marked complete!', 'success');
+                } else {
+                    this.toast('Lesson completed! (Saved locally - rules blocked cloud sync)', 'warning');
+                }
+                this.renderPlayer();
             },
 
             async saveNote(text) {
                 const key = `${this.user.id}_${this.activeCourseId}_${this.activeLessonId}`;
                 this.data.notes[key] = text;
+                DB.save(this.data);
                 try {
                     await setDoc(doc(fs, 'notes', key), { text });
                 } catch (err) {
-                    console.error("Error saving note to Firestore:", err);
+                    console.warn("Could not save note to Google Cloud Firestore (using local storage fallback):", err);
                 }
             },
 
@@ -3867,13 +3987,16 @@
       <div class="user-info"><div class="user-name">${this.e(u.name)}</div><div class="user-role">Administrator</div></div>
     `;
 
-                const revenue = this.data.enrollments.filter(e => e.status === 'approved').reduce((a, e) => a + e.price, 0);
+                const revenue = this.data.enrollments.filter(e => e.status === 'approved').reduce((a, e) => a + (e.price || 0), 0);
                 const activeStudents = this.data.users.filter(u => u.role === 'student' && u.status === 'active').length;
 
                 document.getElementById('panel-content').innerHTML = `
       <div class="panel-header">
         <div>
-          <div class="t-xs c-text2 fw-600 uppercase" style="letter-spacing:.08em;margin-bottom:.25rem">Admin Panel</div>
+          <div class="t-xs c-text2 fw-600 uppercase" style="letter-spacing:.08em;margin-bottom:.25rem; display:flex; align-items:center; gap:0.5rem">
+            Admin Panel
+            <span id="firestore-sync-badge-container">${this.getFirestoreSyncBadge()}</span>
+          </div>
           <h1 class="t-display t-h2">Command Center</h1>
         </div>
         <div class="flex gap-2 items-center">
@@ -3894,7 +4017,7 @@
             ${this.data.enrollments.slice(-5).reverse().map(e => `
               <div class="flex items-center justify-between py-3 border-b" style="border-color:var(--border)">
                 <div><div class="fw-600 t-sm">${this.e(e.userName)}</div><div class="t-xs c-text2">${this.e(e.courseTitle)}</div></div>
-                <div class="flex items-center gap-2"><span class="badge ${e.status === 'approved' ? 'badge-green' : e.status === 'rejected' ? 'badge-red' : 'badge-orange'}">${e.status}</span><span class="fw-700 t-sm">₹${e.price.toLocaleString()}</span></div>
+                <div class="flex items-center gap-2"><span class="badge ${e.status === 'approved' ? 'badge-green' : e.status === 'rejected' ? 'badge-red' : e.status === 'rejected' ? 'badge-red' : 'badge-orange'}">${e.status}</span><span class="fw-700 t-sm">₹${(e.price || 0).toLocaleString()}</span></div>
               </div>
             `).join('') || '<div class="c-text2 t-sm">No enrollments yet</div>'}
           </div>
@@ -3912,7 +4035,7 @@
                   <td><div class="fw-600">${this.e(c.title)}</div><div class="t-xs c-text2">${this.e(c.level || '')}</div></td>
                   <td>${this.e(c.instructor)}</td>
                   <td>${(c.modules || []).length} modules · ${(c.modules || []).reduce((a, m) => a + (m.lessons || []).length, 0)} lessons</td>
-                  <td class="fw-700">₹${c.price.toLocaleString()}</td>
+                  <td class="fw-700">₹${(c.price || 0).toLocaleString()}</td>
                   <td>
                     <button class="btn btn-ghost btn-sm c-blue" onclick="App.openCourseModal(${c.id})"><i class="fa-solid fa-pen"></i></button>
                     <button class="btn btn-ghost btn-sm c-red" onclick="App.deleteCourse(${c.id})"><i class="fa-solid fa-trash"></i></button>
@@ -3952,7 +4075,7 @@
                     ${this.e(e.utr)}
                     ${e.screenshot ? `<br><a href="${this.e(e.screenshot)}" target="_blank" class="c-blue fw-600 t-xs" style="display:inline-flex;align-items:center;gap:4px;margin-top:4px"><i class="fa-solid fa-receipt"></i> View Receipt</a>` : ''}
                   </td>
-                  <td class="fw-700">₹${e.price.toLocaleString()}</td>
+                  <td class="fw-700">₹${(e.price || 0).toLocaleString()}</td>
                   <td><span class="badge ${e.status === 'approved' ? 'badge-green' : e.status === 'rejected' ? 'badge-red' : 'badge-orange'}">${e.status}</span></td>
                   <td>${e.status === 'pending' ? `<button class="btn btn-success btn-sm mr-2" onclick="App.auditPayment('${e.id}','approved')">✓ Approve</button><button class="btn btn-danger btn-sm" onclick="App.auditPayment('${e.id}','rejected')">✗</button>` : '—'}</td>
                 </tr>
@@ -4341,7 +4464,11 @@
         window.App = App;
         window.DB = DB;
 
-        document.addEventListener('DOMContentLoaded', () => App.init());
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => App.init());
+        } else {
+            App.init();
+        }
     </script>
 </body>
 
