@@ -110,7 +110,7 @@
             --accent-hover: #1d4ed8;
             --accent-glow: rgba(37, 99, 235, 0.2);
             --accent-surface: rgba(37, 99, 235, 0.04);
-            
+
             /* Logic for Logo Normalization in Light Mode */
             --logo-filter: grayscale(1) invert(0) brightness(0.2) opacity(0.4);
             --logo-hover-filter: grayscale(0) invert(0) brightness(1) opacity(1);
@@ -484,7 +484,9 @@
         }
 
         @keyframes shine {
-            to { background-position: 200% center; }
+            to {
+                background-position: 200% center;
+            }
         }
 
         .text-glow {
@@ -930,12 +932,25 @@
             animation: float 20s ease-in-out infinite alternate;
         }
 
-        .hero-bg-1 { top: -10%; left: -10%; }
-        .hero-bg-2 { bottom: -10%; right: -10%; animation-delay: -5s; }
+        .hero-bg-1 {
+            top: -10%;
+            left: -10%;
+        }
+
+        .hero-bg-2 {
+            bottom: -10%;
+            right: -10%;
+            animation-delay: -5s;
+        }
 
         @keyframes float {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(50px, 50px) scale(1.1); }
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(50px, 50px) scale(1.1);
+            }
         }
 
         .hero-badge i {
@@ -943,9 +958,21 @@
         }
 
         @keyframes pulse-bolt {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); text-shadow: 0 0 10px var(--accent); }
-            100% { opacity: 1; transform: scale(1); }
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.2);
+                text-shadow: 0 0 10px var(--accent);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         .hero-glow {
@@ -1716,6 +1743,7 @@
             .video-area {
                 padding: 1.5rem 1rem 0.5rem;
             }
+
             .video-container {
                 border-radius: 16px;
             }
@@ -1725,6 +1753,7 @@
             .video-area {
                 padding: 0.75rem 0.5rem 0.25rem;
             }
+
             .video-container {
                 border-radius: 12px;
             }
@@ -2559,7 +2588,7 @@
     <nav class="navbar" id="main-nav">
         <div class="container nav-inner">
             <div class="nav-brand" onclick="App.navigate('landing')">
-                <img src="main1.png" alt="SMPS ELITE Logo" class="brand-logo-img">
+                <img src="LOGOS/main/main1.png" alt="SMPS ELITE Logo" class="brand-logo-img">
             </div>
             <div class="nav-links" id="nav-links"></div>
             <div class="nav-right" id="nav-right">
@@ -2606,35 +2635,7 @@
                             <h2 class="trust-title">Collaborating with Top Engineering Innovators</h2>
                         </div>
 
-                        <div class="logo-slider">
-                            <div class="logo-track">
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(2).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(4).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(5).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(6).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(7).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(8).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <!-- Duplicate for Seamless Scroll -->
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(2).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(4).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(5).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(6).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(7).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                                <div class="logo-card"><img src="LOGOS/main/LOGOS.pdf(8).png" class="logo-img"
-                                        alt="Partner Logo"></div>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>
@@ -2756,12 +2757,12 @@
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
-          apiKey: "AIzaSyBui5B5lnfnVQj_p1WYtBy2wIHhrfeu1bM",
-          authDomain: "smps-certification.firebaseapp.com",
-          projectId: "smps-certification",
-          storageBucket: "smps-certification.firebasestorage.app",
-          messagingSenderId: "1029381842930",
-          appId: "1:1029381842930:web:7ac33b7ef0bc22fc452d6b"
+            apiKey: "AIzaSyBui5B5lnfnVQj_p1WYtBy2wIHhrfeu1bM",
+            authDomain: "smps-certification.firebaseapp.com",
+            projectId: "smps-certification",
+            storageBucket: "smps-certification.firebasestorage.app",
+            messagingSenderId: "1029381842930",
+            appId: "1:1029381842930:web:7ac33b7ef0bc22fc452d6b"
         };
 
         // Initialize Firebase
@@ -2858,7 +2859,7 @@
             showSyncDiagnostics() {
                 const modalBody = document.getElementById('settings-modal-body');
                 document.getElementById('settings-modal-body').parentElement.querySelector('.modal-title').textContent = 'Cloud Sync Diagnostics';
-                
+
                 let details = '';
                 for (let [col, status] of Object.entries(this.syncStatus || {})) {
                     const icon = status === 'connected' ? '<i class="fa-solid fa-circle-check c-green"></i>' : '<i class="fa-solid fa-circle-xmark c-red"></i>';
@@ -2911,7 +2912,7 @@ service cloud.firestore {
                                 id: parseInt(doc.id) || data.id
                             });
                         });
-                        
+
                         if (coursesList.length === 0) {
                             // Seed Firestore with default courses if empty
                             const defaults = DB.defaults().courses;
@@ -3051,9 +3052,9 @@ service cloud.firestore {
                 else if (this.view === 'dashboard' || this.view === 'admin') {
                     if (this.user) {
                         if (this.user.role === 'admin') {
-                            const editing = !document.getElementById('modal-course').classList.contains('hidden') || 
-                                            !document.getElementById('modal-lesson').classList.contains('hidden') ||
-                                            !document.getElementById('modal-quiz').classList.contains('hidden');
+                            const editing = !document.getElementById('modal-course').classList.contains('hidden') ||
+                                !document.getElementById('modal-lesson').classList.contains('hidden') ||
+                                !document.getElementById('modal-quiz').classList.contains('hidden');
                             if (!editing) {
                                 this.renderAdminDash();
                             }
@@ -3423,7 +3424,7 @@ service cloud.firestore {
                     status: 'pending',
                     createdAt: new Date().toISOString()
                 };
-                
+
                 try {
                     await setDoc(doc(fs, 'enrollments', enr.id), enr);
                     this.toast('Payment submitted! Pending admin verification.', 'success');
@@ -3607,10 +3608,10 @@ service cloud.firestore {
                 const key = `${this.user.id}_${this.activeCourseId}`;
                 if (!this.data.progress[key]) this.data.progress[key] = {};
                 this.data.progress[key][lessonId] = true;
-                
+
                 // Save locally first to guarantee responsive fallback
                 DB.save(this.data);
-                
+
                 let cloudSaved = false;
                 try {
                     await setDoc(doc(fs, 'progress', key), { lessons: this.data.progress[key] });
@@ -3628,13 +3629,13 @@ service cloud.firestore {
                         const comp = { userId: this.user.id, courseId: this.activeCourseId, certId: 'CERT-' + Math.random().toString(36).substr(2, 9).toUpperCase(), date: new Date().toISOString() };
                         this.data.completions.push(comp);
                         DB.save(this.data);
-                        
+
                         try {
                             await setDoc(doc(fs, 'certificates', `${this.user.id}_${this.activeCourseId}`), comp);
                         } catch (err) {
                             console.warn("Could not save certificate to Google Cloud Firestore (using local storage fallback):", err);
                         }
-                        
+
                         this.toast('🎉 Course completed! Certificate available.', 'success');
                         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
                     }
@@ -4256,11 +4257,11 @@ service cloud.firestore {
                 });
 
                 const cId = courseId ? String(courseId) : String(Date.now());
-                const course = { 
-                    id: parseInt(cId), 
-                    title, instructor, price, thumb, level, duration, desc, 
-                    createdAt: courseId ? (this.data.courses.find(x => x.id == courseId)?.createdAt || new Date().toISOString()) : new Date().toISOString(), 
-                    modules 
+                const course = {
+                    id: parseInt(cId),
+                    title, instructor, price, thumb, level, duration, desc,
+                    createdAt: courseId ? (this.data.courses.find(x => x.id == courseId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+                    modules
                 };
 
                 try {
@@ -4347,7 +4348,7 @@ service cloud.firestore {
                 if (pass.length < 6) { this.toast('Password must be at least 6 characters', 'error'); return; }
                 if (this.data.users.find(u => u.email === email)) { this.toast('Email already registered. Please login.', 'error'); return; }
                 const u = { id: 'u' + Date.now(), name, email, role: 'student', status: 'active', joinedAt: new Date().toISOString() };
-                
+
                 try {
                     await setDoc(doc(fs, 'users', u.id), u);
                     this.user = u;
@@ -4445,12 +4446,12 @@ service cloud.firestore {
                     try {
                         const parts = url.split('youtu.be/');
                         if (parts[1]) videoId = parts[1].split('?')[0];
-                    } catch (e) {}
+                    } catch (e) { }
                 } else if (url.includes('youtube.com/embed/')) {
                     try {
                         const parts = url.split('youtube.com/embed/');
                         if (parts[1]) videoId = parts[1].split('?')[0];
-                    } catch (e) {}
+                    } catch (e) { }
                 }
                 return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
             }
