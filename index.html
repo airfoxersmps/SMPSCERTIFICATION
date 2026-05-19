@@ -2706,9 +2706,18 @@
 
     <script type="module">
         // Import Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-        import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import {
+            getFirestore,
+            collection,
+            getDocs,
+            setDoc,
+            doc,
+            updateDoc,
+            deleteDoc,
+            onSnapshot
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -2722,7 +2731,7 @@
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        const fs = getFirestore(app);
         const storage = getStorage(app);
 
         // ============================================================
@@ -2858,36 +2867,102 @@
                     document.getElementById('main-nav').classList.toggle('scrolled', scrollY > 20);
                 });
 
-                // Sync with Firebase Realtime Database in background
+                // Set up visual loading indicators and sync from Firestore collections reactively
                 try {
-                    const dbRef = ref(db, 'smps_lms_v4');
-                    const snapshot = await get(dbRef);
-                    
-                    if (snapshot.exists()) {
-                        const cloudData = snapshot.val();
-                        if (JSON.stringify(cloudData) !== JSON.stringify(this.data)) {
-                            this.data = cloudData;
+                    // 1. Sync Courses
+                    onSnapshot(collection(fs, 'courses'), async (snapshot) => {
+                        const coursesList = [];
+                        snapshot.forEach((doc) => {
+                            const data = doc.data();
+                            coursesList.push({
+                                ...data,
+                                id: parseInt(doc.id) || data.id
+                            });
+                        });
+                        
+                        if (coursesList.length === 0) {
+                            // Seed Firestore with default courses if empty
+                            const defaults = DB.defaults().courses;
+                            for (let c of defaults) {
+                                await setDoc(doc(fs, 'courses', String(c.id)), c);
+                            }
+                            // Also seed default admin user
+                            const defaultUsers = DB.defaults().users;
+                            for (let u of defaultUsers) {
+                                await setDoc(doc(fs, 'users', u.id), u);
+                            }
+                        } else {
+                            this.data.courses = coursesList.sort((a, b) => a.id - b.id);
                             DB.save(this.data);
                             this.refreshCurrentView();
                         }
-                    } else {
-                        // Populate remote with default/local data
-                        await set(dbRef, this.data);
-                    }
-
-                    // Listen for updates from other clients in real-time
-                    onValue(dbRef, (snapshot) => {
-                        if (snapshot.exists()) {
-                            const cloudData = snapshot.val();
-                            if (JSON.stringify(cloudData) !== JSON.stringify(this.data)) {
-                                this.data = cloudData;
-                                DB.save(this.data);
-                                this.refreshCurrentView();
-                            }
-                        }
                     });
+
+                    // 2. Sync Users
+                    onSnapshot(collection(fs, 'users'), (snapshot) => {
+                        const usersList = [];
+                        snapshot.forEach((doc) => {
+                            usersList.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        });
+                        this.data.users = usersList;
+                        DB.save(this.data);
+                        this.refreshCurrentView();
+                    });
+
+                    // 3. Sync Enrollments
+                    onSnapshot(collection(fs, 'enrollments'), (snapshot) => {
+                        const enrollmentsList = [];
+                        snapshot.forEach((doc) => {
+                            enrollmentsList.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        });
+                        this.data.enrollments = enrollmentsList;
+                        DB.save(this.data);
+                        this.refreshCurrentView();
+                    });
+
+                    // 4. Sync Certificates (Completions)
+                    onSnapshot(collection(fs, 'certificates'), (snapshot) => {
+                        const completionsList = [];
+                        snapshot.forEach((doc) => {
+                            completionsList.push({
+                                ...doc.data()
+                            });
+                        });
+                        this.data.completions = completionsList;
+                        DB.save(this.data);
+                        this.refreshCurrentView();
+                    });
+
+                    // 5. Sync Progress
+                    onSnapshot(collection(fs, 'progress'), (snapshot) => {
+                        const progObj = {};
+                        snapshot.forEach((doc) => {
+                            progObj[doc.id] = doc.data().lessons || {};
+                        });
+                        this.data.progress = progObj;
+                        DB.save(this.data);
+                        this.refreshCurrentView();
+                    });
+
+                    // 6. Sync Notes
+                    onSnapshot(collection(fs, 'notes'), (snapshot) => {
+                        const notesObj = {};
+                        snapshot.forEach((doc) => {
+                            notesObj[doc.id] = doc.data().text || '';
+                        });
+                        this.data.notes = notesObj;
+                        DB.save(this.data);
+                        this.refreshCurrentView();
+                    });
+
                 } catch (err) {
-                    console.error("Firebase connection/sync failed:", err);
+                    console.error("Firestore connection/sync failed:", err);
                     this.toast("Sync Error: Running in offline local mode", "warning");
                 }
             },
@@ -2895,14 +2970,6 @@
             async save() {
                 DB.save(this.data);
                 DB.saveSession(this.user);
-                
-                try {
-                    const dbRef = ref(db, 'smps_lms_v4');
-                    await set(dbRef, this.data);
-                } catch (err) {
-                    console.error("Firebase save failed:", err);
-                    this.toast("Sync failed: Saved locally", "warning");
-                }
             },
 
             refreshCurrentView() {
@@ -3266,7 +3333,7 @@
     `;
             },
 
-            submitEnrollment(e) {
+            async submitEnrollment(e) {
                 e.preventDefault();
                 const utr = document.getElementById('utr-input').value.trim();
                 if (utr.length < 6) { this.toast('Please enter a valid UTR number', 'error'); return; }
@@ -3285,12 +3352,15 @@
                     status: 'pending',
                     createdAt: new Date().toISOString()
                 };
-                const idx = this.data.enrollments.findIndex(x => x.userId === this.user.id && x.courseId == c.id);
-                if (idx > -1) this.data.enrollments[idx] = enr;
-                else this.data.enrollments.push(enr);
-                this.save();
-                this.toast('Payment submitted! Pending admin verification.', 'success');
-                this.navigate('dashboard');
+                
+                try {
+                    await setDoc(doc(fs, 'enrollments', enr.id), enr);
+                    this.toast('Payment submitted! Pending admin verification.', 'success');
+                    this.navigate('dashboard');
+                } catch (err) {
+                    console.error("Error submitting enrollment to Firestore:", err);
+                    this.toast("Failed to submit payment. Try again.", "error");
+                }
             },
 
             // ---- PLAYER ----
@@ -3460,32 +3530,43 @@
                 return idx >= 0 && idx < all.length - 1 ? all[idx + 1].id : (all[0]?.id || '');
             },
 
-            markLessonDone(lessonId) {
+            async markLessonDone(lessonId) {
                 if (!lessonId) return;
                 const key = `${this.user.id}_${this.activeCourseId}`;
                 if (!this.data.progress[key]) this.data.progress[key] = {};
                 this.data.progress[key][lessonId] = true;
-                this.save();
-                this.toast('Lesson marked complete!', 'success');
-                // Check course completion
-                const c = this.data.courses.find(x => x.id == this.activeCourseId);
-                const totalLessons = (c?.modules || []).reduce((a, m) => a + (m.lessons || []).length, 0);
-                const completedCount = Object.keys(this.data.progress[key]).length;
-                if (completedCount >= totalLessons) {
-                    if (!this.data.completions.some(x => x.userId === this.user.id && x.courseId == this.activeCourseId)) {
-                        this.data.completions.push({ userId: this.user.id, courseId: this.activeCourseId, certId: 'CERT-' + Math.random().toString(36).substr(2, 9).toUpperCase(), date: new Date().toISOString() });
-                        this.save();
-                        this.toast('🎉 Course completed! Certificate available.', 'success');
-                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                
+                try {
+                    await setDoc(doc(fs, 'progress', key), { lessons: this.data.progress[key] });
+                    this.toast('Lesson marked complete!', 'success');
+                    
+                    // Check course completion
+                    const c = this.data.courses.find(x => x.id == this.activeCourseId);
+                    const totalLessons = (c?.modules || []).reduce((a, m) => a + (m.lessons || []).length, 0);
+                    const completedCount = Object.keys(this.data.progress[key]).length;
+                    if (completedCount >= totalLessons) {
+                        if (!this.data.completions.some(x => x.userId === this.user.id && x.courseId == this.activeCourseId)) {
+                            const comp = { userId: this.user.id, courseId: this.activeCourseId, certId: 'CERT-' + Math.random().toString(36).substr(2, 9).toUpperCase(), date: new Date().toISOString() };
+                            await setDoc(doc(fs, 'certificates', `${this.user.id}_${this.activeCourseId}`), comp);
+                            this.toast('🎉 Course completed! Certificate available.', 'success');
+                            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                        }
                     }
+                    this.renderPlayer();
+                } catch (err) {
+                    console.error("Error marking lesson complete in Firestore:", err);
+                    this.toast("Failed to mark lesson complete.", "error");
                 }
-                this.renderPlayer();
             },
 
-            saveNote(text) {
+            async saveNote(text) {
                 const key = `${this.user.id}_${this.activeCourseId}_${this.activeLessonId}`;
                 this.data.notes[key] = text;
-                this.save();
+                try {
+                    await setDoc(doc(fs, 'notes', key), { text });
+                } catch (err) {
+                    console.error("Error saving note to Firestore:", err);
+                }
             },
 
             openQuiz() {
@@ -3890,33 +3971,53 @@
                 if (el) el.classList.add('active');
             },
 
-            auditPayment(id, status) {
-                const enr = this.data.enrollments.find(e => e.id === id);
-                if (!enr) return;
-                enr.status = status;
-                this.save();
-                this.renderAdminDash();
-                this.toast(`Enrollment ${status}`, status === 'approved' ? 'success' : 'info');
+            async auditPayment(id, status) {
+                try {
+                    await updateDoc(doc(fs, 'enrollments', id), { status: status });
+                    this.renderAdminDash();
+                    this.toast(`Enrollment ${status}`, status === 'approved' ? 'success' : 'info');
+                } catch (err) {
+                    console.error("Error auditing payment in Firestore:", err);
+                    this.toast("Failed to audit payment.", "error");
+                }
             },
 
-            deleteCourse(id) {
+            async deleteCourse(id) {
                 if (!confirm('Delete this course permanently?')) return;
-                this.data.courses = this.data.courses.filter(c => c.id != id);
-                this.save(); this.renderAdminDash(); this.toast('Course deleted', 'info');
+                try {
+                    await deleteDoc(doc(fs, 'courses', String(id)));
+                    this.renderAdminDash();
+                    this.toast('Course deleted', 'info');
+                } catch (err) {
+                    console.error("Error deleting course from Firestore:", err);
+                    this.toast("Failed to delete course.", "error");
+                }
             },
 
-            toggleUserStatus(id) {
+            async toggleUserStatus(id) {
                 const u = this.data.users.find(x => x.id === id);
                 if (!u) return;
-                u.status = u.status === 'suspended' ? 'active' : 'suspended';
-                this.save(); this.renderAdminDash(); this.toast(`User ${u.status}`, 'success');
+                const newStatus = u.status === 'suspended' ? 'active' : 'suspended';
+                try {
+                    await updateDoc(doc(fs, 'users', id), { status: newStatus });
+                    this.renderAdminDash();
+                    this.toast(`User ${newStatus}`, 'success');
+                } catch (err) {
+                    console.error("Error toggling user status in Firestore:", err);
+                    this.toast("Failed to toggle status.", "error");
+                }
             },
 
-            deleteUser(id) {
+            async deleteUser(id) {
                 if (!confirm('Delete this user?')) return;
-                this.data.users = this.data.users.filter(x => x.id !== id);
-                this.data.enrollments = this.data.enrollments.filter(e => e.userId !== id);
-                this.save(); this.renderAdminDash(); this.toast('User deleted');
+                try {
+                    await deleteDoc(doc(fs, 'users', id));
+                    this.renderAdminDash();
+                    this.toast('User deleted');
+                } catch (err) {
+                    console.error("Error deleting user from Firestore:", err);
+                    this.toast("Failed to delete user.", "error");
+                }
             },
 
             // ---- COURSE MODAL (Admin) ----
@@ -4030,7 +4131,7 @@
                 container.appendChild(div.firstElementChild);
             },
 
-            saveCourse(e, courseId) {
+            async saveCourse(e, courseId) {
                 e.preventDefault();
                 const title = document.getElementById('cm-title').value.trim();
                 const instructor = document.getElementById('cm-instructor').value.trim();
@@ -4056,17 +4157,23 @@
                     if (modTitle) modules.push({ id: modId, title: modTitle, lessons, order: modules.length });
                 });
 
-                const course = { id: courseId || Date.now(), title, instructor, price, thumb, level, duration, desc, createdAt: courseId ? (this.data.courses.find(x => x.id == courseId)?.createdAt || new Date().toISOString()) : new Date().toISOString(), modules };
-                if (courseId) {
-                    const idx = this.data.courses.findIndex(x => x.id == courseId);
-                    if (idx > -1) this.data.courses[idx] = course;
-                } else {
-                    this.data.courses.push(course);
+                const cId = courseId ? String(courseId) : String(Date.now());
+                const course = { 
+                    id: parseInt(cId), 
+                    title, instructor, price, thumb, level, duration, desc, 
+                    createdAt: courseId ? (this.data.courses.find(x => x.id == courseId)?.createdAt || new Date().toISOString()) : new Date().toISOString(), 
+                    modules 
+                };
+
+                try {
+                    await setDoc(doc(fs, 'courses', cId), course);
+                    this.closeOverlayForce();
+                    this.renderAdminDash();
+                    this.toast(courseId ? 'Course updated' : 'Course created!', 'success');
+                } catch (err) {
+                    console.error("Error saving course to Firestore:", err);
+                    this.toast("Failed to save course. Try again.", "error");
                 }
-                this.save();
-                this.closeOverlayForce();
-                this.renderAdminDash();
-                this.toast(courseId ? 'Course updated' : 'Course created!', 'success');
             },
 
             // ---- AUTH ----
@@ -4134,7 +4241,7 @@
                 this.navigate(u.role === 'admin' ? 'admin' : 'dashboard');
             },
 
-            handleRegister(e) {
+            async handleRegister(e) {
                 e.preventDefault();
                 const name = document.getElementById('a-name').value.trim();
                 const email = document.getElementById('a-email').value.trim();
@@ -4142,10 +4249,18 @@
                 if (pass.length < 6) { this.toast('Password must be at least 6 characters', 'error'); return; }
                 if (this.data.users.find(u => u.email === email)) { this.toast('Email already registered. Please login.', 'error'); return; }
                 const u = { id: 'u' + Date.now(), name, email, role: 'student', status: 'active', joinedAt: new Date().toISOString() };
-                this.data.users.push(u);
-                this.user = u; this.save(); this.closeOverlayForce();
-                this.toast(`Welcome, ${name}!`, 'success');
-                this.navigate('dashboard');
+                
+                try {
+                    await setDoc(doc(fs, 'users', u.id), u);
+                    this.user = u;
+                    DB.saveSession(this.user);
+                    this.closeOverlayForce();
+                    this.toast(`Welcome, ${name}!`, 'success');
+                    this.navigate('dashboard');
+                } catch (err) {
+                    console.error("Error registering user to Firestore:", err);
+                    this.toast("Failed to create account. Try again.", "error");
+                }
             },
 
             handleAdminLogin(e) {
@@ -4177,14 +4292,20 @@
                 this.openSpecificModal('modal-settings');
             },
 
-            saveSettings(e) {
+            async saveSettings(e) {
                 e.preventDefault();
                 const name = document.getElementById('set-name').value.trim();
-                this.user.name = name;
-                const u = this.data.users.find(x => x.id === this.user.id);
-                if (u) u.name = name;
-                this.save(); this.closeOverlayForce(); this.toast('Settings saved', 'success');
-                this.renderStudentDash();
+                try {
+                    await updateDoc(doc(fs, 'users', this.user.id), { name: name });
+                    this.user.name = name;
+                    DB.saveSession(this.user);
+                    this.closeOverlayForce();
+                    this.toast('Settings saved', 'success');
+                    this.renderDashboard('student');
+                } catch (err) {
+                    console.error("Error saving user settings to Firestore:", err);
+                    this.toast("Failed to save settings.", "error");
+                }
             },
 
             // ---- OVERLAY / MODALS ----
